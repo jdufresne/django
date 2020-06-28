@@ -1426,6 +1426,19 @@ templates used by the :class:`ModelAdmin` views:
     for displaying a confirmation page when deleting one or more objects. See
     the :doc:`actions documentation</ref/contrib/admin/actions>`.
 
+.. attribute:: AdminSite.final_catch_all_pattern
+
+    .. versionadded:: 3.2
+
+    A boolean value that determines whether to add a final "catch all" URL
+    pattern to the admin that redirects unauthenticated users to the login
+    page. By default, it is set to ``True``.
+
+    .. warning::
+
+        Setting this to ``False`` is not recommended as it would allow for
+        unauthenticated users to enumerate system models via URLs.
+
 .. attribute:: ModelAdmin.object_history_template
 
     Path to a custom template, used by :meth:`history_view`.

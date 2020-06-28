@@ -488,6 +488,14 @@ Miscellaneous
   :py:meth:`~unittest.TestCase.addCleanup` so that cleanups registered in the
   :py:meth:`~unittest.TestCase.setUp` method are called before
   ``TestContextDecorator.disable()``.
+* The admin now installs a "catch all" URL pattern that redirects
+  unauthenticated users to the login page rather than returning a 404 response.
+  This protects against a model enumeration privacy issue. As a side effect, it
+  prevents the :setting:`APPEND_SLASH` setting from working on admin URLs. To
+  disable the catch all pattern and restore the previous behavior, set the
+  :attr:`AdminSite.final_catch_all_pattern
+  <django.contrib.admin.AdminSite.final_catch_all_pattern>` attribute to
+  ``False``.
 
 .. _deprecated-features-3.2:
 

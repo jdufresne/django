@@ -62,6 +62,8 @@ class AdminSite:
     password_change_template = None
     password_change_done_template = None
 
+    final_catch_all_pattern = True
+
     def __init__(self, name='admin'):
         self._registry = {}  # model_class class -> admin_class instance
         self.name = name
@@ -288,6 +290,10 @@ class AdminSite:
             urlpatterns += [
                 re_path(regex, wrap(self.app_index), name='app_list'),
             ]
+
+        if self.final_catch_all_pattern:
+            urlpatterns.append(re_path(r'^.*$', wrap(self.final_catch_all_view)))
+
         return urlpatterns
 
     @property
@@ -408,6 +414,9 @@ class AdminSite:
         }
         request.current_app = self.name
         return LoginView.as_view(**defaults)(request)
+
+    def final_catch_all_view(self, request):
+        raise Http404
 
     def _build_app_dict(self, request, label=None):
         """

@@ -15,7 +15,7 @@ from django.core.files.storage import FileSystemStorage
 from django.core.mail import EmailMessage
 from django.db import models
 from django.forms.models import BaseModelFormSet
-from django.http import HttpResponse, StreamingHttpResponse
+from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
 from django.urls import path
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -100,7 +100,19 @@ class ArticleForm(forms.ModelForm):
         model = Article
 
 
-class ArticleAdmin(admin.ModelAdmin):
+class ArticleAdminWithExtraUrl(admin.ModelAdmin):
+    def get_urls(self):
+        urlpatterns = super().get_urls()
+        urlpatterns.append(
+            path('extra.json', self.admin_site.admin_view(self.extra_json), name='article_extra_json')
+        )
+        return urlpatterns
+
+    def extra_json(self, request):
+        return JsonResponse({})
+
+
+class ArticleAdmin(ArticleAdminWithExtraUrl):
     list_display = (
         'content', 'date', callable_year, 'model_year', 'modeladmin_year',
         'model_year_reversed', 'section', lambda obj: obj.title,
@@ -1178,3 +1190,7 @@ class ArticleAdmin9(admin.ModelAdmin):
 
 site9 = admin.AdminSite(name='admin9')
 site9.register(Article, ArticleAdmin9)
+
+site10 = admin.AdminSite(name='admin10')
+site10.final_catch_all_pattern = False
+site10.register(Article, ArticleAdminWithExtraUrl)
