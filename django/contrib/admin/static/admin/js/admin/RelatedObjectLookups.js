@@ -3,8 +3,6 @@
 // and Add Another links.
 'use strict';
 {
-    const $ = django.jQuery;
-
     function showAdminPopup(triggeringLink, name_regexp, add_popup) {
         const name = triggeringLink.id.replace(name_regexp, '');
         const href = new URL(triggeringLink.href);
@@ -35,40 +33,46 @@
     }
 
     function updateRelatedObjectLinks(triggeringLink) {
-        const $this = $(triggeringLink);
-        const siblings = $this.nextAll('.view-related, .change-related, .delete-related');
-        if (!siblings.length) {
-            return;
-        }
-        const value = $this.val();
-        if (value) {
-            siblings.each(function() {
-                const elm = $(this);
-                elm.attr('href', elm.attr('data-href-template').replace('__fk__', value));
-            });
-        } else {
-            siblings.removeAttr('href');
+        const value = triggeringLink.value;
+
+        let el = triggeringLink.nextElementSibling;
+        while (el) {
+            if (el.matches('.view-related, .change-related, .delete-related')) {
+                if (value) {
+                    el.href = el.dataset.hrefTemplate.replace('__fk__', value);
+                } else {
+                    el.removeAttribute('href');
+                }
+            }
+            el = el.nextElementSibling;
         }
     }
 
     function dismissAddRelatedObjectPopup(win, newId, newRepr) {
         const name = win.name;
-        const elem = document.getElementById(name);
-        if (elem) {
-            const elemName = elem.nodeName.toUpperCase();
-            if (elemName === 'SELECT') {
-                elem.options[elem.options.length] = new Option(newRepr, newId, true, true);
-            } else if (elemName === 'INPUT') {
-                if (elem.classList.contains('vManyToManyRawIdAdminField') && elem.value) {
-                    elem.value += ',' + newId;
+        const el = document.getElementById(name);
+        if (el) {
+            if (el.tagName === 'SELECT') {
+                el.options[el.options.length] = new Option(
+                    newRepr,
+                    newId,
+                    true,
+                    true
+                );
+            } else if (el.tagName === 'INPUT') {
+                if (
+                    el.classList.contains('vManyToManyRawIdAdminField') &&
+                    el.value
+                ) {
+                    el.value += ',' + newId;
                 } else {
-                    elem.value = newId;
+                    el.value = newId;
                 }
             }
             // Trigger a change event to update related links if required.
-            $(elem).trigger('change');
+            el.dispatchEvent(new Event('change'));
         } else {
-            const toId = name + "_to";
+            const toId = name + '_to';
             const o = new Option(newRepr, newId);
             SelectBox.add_to_cache(toId, o);
             SelectBox.redisplay(toId);
@@ -78,32 +82,42 @@
 
     function dismissChangeRelatedObjectPopup(win, objId, newRepr, newId) {
         const id = win.name.replace(/^edit_/, '');
-        const selectsSelector = interpolate('#%s, #%s_from, #%s_to', [id, id, id]);
-        const selects = $(selectsSelector);
-        selects.find('option').each(function() {
-            if (this.value === objId) {
-                this.textContent = newRepr;
-                this.value = newId;
-            }
+        const selectsSelector = interpolate('#%s, #%s_from, #%s_to', [
+            id,
+            id,
+            id,
+        ]);
+        document.querySelectorAll(selectsSelector).forEach(function(el) {
+            el.querySelectorAll('option').forEach(function(opt) {
+                if (opt.value === objId) {
+                    opt.textContent = newRepr;
+                    opt.value = newId;
+                }
+            });
+            el.nextElementSibling.querySelectorAll('.select2-selection__rendered').forEach(function(selection) {
+                selection.lastChild.textContent = newRepr;
+                selection.title = newRepr;
+            });
         });
-        selects.next().find('.select2-selection__rendered').each(function() {
-            // The element can have a clear button as a child.
-            // Use the lastChild to modify only the displayed value.
-            this.lastChild.textContent = newRepr;
-            this.title = newRepr;
-        });
+
         win.close();
     }
 
     function dismissDeleteRelatedObjectPopup(win, objId) {
         const id = win.name.replace(/^delete_/, '');
-        const selectsSelector = interpolate('#%s, #%s_from, #%s_to', [id, id, id]);
-        const selects = $(selectsSelector);
-        selects.find('option').each(function() {
-            if (this.value === objId) {
-                $(this).remove();
-            }
-        }).trigger('change');
+        const selectsSelector = interpolate('#%s, #%s_from, #%s_to', [
+            id,
+            id,
+            id,
+        ]);
+        document.querySelectorAll(selectsSelector).forEach(function(el) {
+            el.querySelectorAll('option').forEach(function(opt) {
+                if (opt.value === objId) {
+                    opt.remove();
+                }
+            });
+            el.dispatchEvent(new Event('change'));
+        });
         win.close();
     }
 
@@ -119,36 +133,87 @@
     window.showAddAnotherPopup = showRelatedObjectPopup;
     window.dismissAddAnotherPopup = dismissAddRelatedObjectPopup;
 
-    $(document).ready(function() {
-        $("a[data-popup-opener]").on('click', function(event) {
-            event.preventDefault();
-            opener.dismissRelatedLookupPopup(window, $(this).data("popup-opener"));
-        });
-        $('body').on('click', '.related-widget-wrapper-link', function(e) {
-            e.preventDefault();
-            if (this.href) {
-                const event = $.Event('django:show-related', {href: this.href});
-                $(this).trigger(event);
-                if (!event.isDefaultPrevented()) {
-                    showRelatedObjectPopup(this);
+    // Call function fn when the DOM is loaded and ready. If it is already
+    // loaded, call the function now.
+    // http://youmightnotneedjquery.com/#ready
+    function ready(fn) {
+        if (document.readyState !== 'loading') {
+            fn();
+        } else {
+            document.addEventListener('DOMContentLoaded', fn);
+        }
+    }
+
+    ready(function() {
+        function addDeferredEventListener(container, type, selector, listener) {
+            container.addEventListener(type, function(event) {
+                const el = event.target.closest(selector);
+                if (el) {
+                    listener(event, el);
+                }
+            });
+        }
+
+        document
+            .querySelectorAll('a[data-popup-opener]')
+            .forEach(function(el) {
+                el.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    opener.dismissRelatedLookupPopup(
+                        window,
+                        event.currentTarget.dataset.popupOpener
+                    );
+                });
+            });
+
+        addDeferredEventListener(
+            document.body,
+            'click',
+            '.related-widget-wrapper-link',
+            function(event, el) {
+                event.preventDefault();
+                if (el.href) {
+                    const customEvent = new CustomEvent('django:show-related', {
+                        detail: el.href,
+                    });
+                    el.dispatchEvent(customEvent);
+                    if (!customEvent.defaultPrevented) {
+                        showRelatedObjectPopup(el);
+                    }
                 }
             }
-        });
-        $('body').on('change', '.related-widget-wrapper select', function(e) {
-            const event = $.Event('django:update-related');
-            $(this).trigger(event);
-            if (!event.isDefaultPrevented()) {
-                updateRelatedObjectLinks(this);
+        );
+
+        addDeferredEventListener(
+            document.body,
+            'change',
+            '.related-widget-wrapper select',
+            function(event, el) {
+                const customEvent = new CustomEvent('django:update-related');
+                el.dispatchEvent(customEvent);
+                if (!customEvent.defaultPrevented) {
+                    updateRelatedObjectLinks(el);
+                }
             }
-        });
-        $('.related-widget-wrapper select').trigger('change');
-        $('body').on('click', '.related-lookup', function(e) {
-            e.preventDefault();
-            const event = $.Event('django:lookup-related');
-            $(this).trigger(event);
-            if (!event.isDefaultPrevented()) {
-                showRelatedObjectLookupPopup(this);
+        );
+        document
+            .querySelectorAll('.related-widget-wrapper select')
+            .forEach(function(el) {
+                el.dispatchEvent(new Event('change'));
+            });
+
+        addDeferredEventListener(
+            document.body,
+            'click',
+            '.related-lookup',
+            function(event, el) {
+                event.preventDefault();
+                const customEvent = new CustomEvent('django:lookup-related');
+                el.dispatchEvent(customEvent);
+                if (!customEvent.defaultPrevented) {
+                    showRelatedObjectLookupPopup(el);
+                }
             }
-        });
+        );
     });
 }
