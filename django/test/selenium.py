@@ -128,3 +128,9 @@ class SeleniumTestCase(LiveServerTestCase, metaclass=SeleniumTestCaseBase):
             yield
         finally:
             self.selenium.implicitly_wait(self.implicit_wait)
+
+    def tearDown(self):
+        if self.browser == 'chrome':
+            for log in self.selenium.get_log('browser'):
+                print(log, file=sys.stderr)
+        super().tearDown()
