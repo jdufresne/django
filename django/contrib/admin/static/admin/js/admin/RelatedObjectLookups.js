@@ -13,11 +13,10 @@
         }
         const win = window.open(href, name, 'height=500,width=800,resizable=yes,scrollbars=yes');
         win.focus();
-        return false;
     }
 
     function showRelatedObjectLookupPopup(triggeringLink) {
-        return showAdminPopup(triggeringLink, /^lookup_/, true);
+        showAdminPopup(triggeringLink, /^lookup_/, true);
     }
 
     function dismissRelatedLookupPopup(win, chosenId) {
@@ -32,7 +31,7 @@
     }
 
     function showRelatedObjectPopup(triggeringLink) {
-        return showAdminPopup(triggeringLink, /^(change|add|delete)_/, false);
+        showAdminPopup(triggeringLink, /^(change|add|delete)_/, false);
     }
 
     function updateRelatedObjectLinks(triggeringLink) {
