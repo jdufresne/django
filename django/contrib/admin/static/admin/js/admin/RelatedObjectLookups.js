@@ -13,11 +13,10 @@
         }
         const win = window.open(href, name, 'height=500,width=800,resizable=yes,scrollbars=yes');
         win.focus();
-        return false;
     }
 
     function showRelatedObjectLookupPopup(triggeringLink) {
-        return showAdminPopup(triggeringLink, /^lookup_/, true);
+        showAdminPopup(triggeringLink, /^lookup_/, true);
     }
 
     function dismissRelatedLookupPopup(win, chosenId) {
@@ -32,7 +31,7 @@
     }
 
     function showRelatedObjectPopup(triggeringLink) {
-        return showAdminPopup(triggeringLink, /^(change|add|delete)_/, false);
+        showAdminPopup(triggeringLink, /^(change|add|delete)_/, false);
     }
 
     function updateRelatedObjectLinks(triggeringLink) {
@@ -122,10 +121,12 @@
 
     $(document).ready(function() {
         $("a[data-popup-opener]").on('click', function(event) {
+            console.log('a[data-popup-opener]');
             event.preventDefault();
             opener.dismissRelatedLookupPopup(window, $(this).data("popup-opener"));
         });
         $('body').on('click', '.related-widget-wrapper-link', function(e) {
+            console.log('.related-widget-wrapper-link');
             e.preventDefault();
             if (this.href) {
                 const event = $.Event('django:show-related', {href: this.href});
@@ -136,6 +137,7 @@
             }
         });
         $('body').on('change', '.related-widget-wrapper select', function(e) {
+            console.log('.related-widget-wrapper select');
             const event = $.Event('django:update-related');
             $(this).trigger(event);
             if (!event.isDefaultPrevented()) {
@@ -144,6 +146,7 @@
         });
         $('.related-widget-wrapper select').trigger('change');
         $('body').on('click', '.related-lookup', function(e) {
+            console.log('.related-lookup');
             e.preventDefault();
             const event = $.Event('django:lookup-related');
             $(this).trigger(event);
@@ -152,4 +155,5 @@
             }
         });
     });
+    console.log('init');
 }
