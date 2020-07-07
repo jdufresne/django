@@ -480,8 +480,10 @@ def technical_404_response(request, exception):
     try:
         tried = exception.args[0]['tried']
     except (IndexError, TypeError, KeyError):
-        tried = []
+        resolved = True
+        tried = request.resolver_match.tried if request.resolver_match else None
     else:
+        resolved = False
         if (not tried or (                  # empty URLconf
             request.path == '/' and
             len(tried) == 1 and             # default URLconf
@@ -519,6 +521,7 @@ def technical_404_response(request, exception):
         'root_urlconf': settings.ROOT_URLCONF,
         'request_path': error_url,
         'urlpatterns': tried,
+        'resolved': resolved,
         'reason': str(exception),
         'request': request,
         'settings': reporter_filter.get_safe_settings(),

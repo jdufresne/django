@@ -136,6 +136,11 @@ class DebugViewTests(SimpleTestCase):
         response = self.client.get('/technical404/')
         self.assertContains(response, "Raised by:", status_code=404)
         self.assertContains(response, "view_tests.views.technical404", status_code=404)
+        self.assertContains(
+            response,
+            'The current path, <code>technical404/</code>, matched the last one.',
+            status_code=404,
+        )
 
     def test_classbased_technical_404(self):
         response = self.client.get('/classbased404/')

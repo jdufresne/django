@@ -59,9 +59,13 @@
         {% endfor %}
       </ol>
       <p>
-        {% if request_path %}
-        The current path, <code>{{ request_path }}</code>,{% else %}
-        The empty path{% endif %} didn’t match any of these.
+        {% if resolved %}
+          The current path, <code>{{ request_path }}</code>, matched the last one.
+        {% else %}
+          {% if request_path %}
+          The current path, <code>{{ request_path }}</code>,{% else %}
+          The empty path{% endif %} didn’t match any of these.
+        {% endif %}
       </p>
     {% else %}
       <p>{{ reason }}</p>
