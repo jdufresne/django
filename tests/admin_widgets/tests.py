@@ -224,7 +224,7 @@ class AdminForeignKeyWidgetChangeList(TestDataMixin, TestCase):
 
     def test_changelist_ForeignKey(self):
         response = self.client.get(reverse('admin:admin_widgets_car_changelist'))
-        self.assertContains(response, '/auth/user/add/')
+        self.assertContains(response, '/auth/user/add')
 
 
 @override_settings(ROOT_URLCONF='admin_widgets.urls')
@@ -544,7 +544,7 @@ class ForeignKeyRawIdWidgetTest(TestCase):
             'class="vForeignKeyRawIdAdminField">'
             '<a href="/admin_widgets/band/?_to_field=id" class="related-lookup" '
             'id="lookup_id_test" title="Lookup"></a>&nbsp;<strong>'
-            '<a href="/admin_widgets/band/%(bandpk)s/change/">Linkin Park</a>'
+            '<a href="/admin_widgets/band/%(bandpk)s/change">Linkin Park</a>'
             '</strong>' % {'bandpk': band.pk}
         )
 
@@ -564,7 +564,7 @@ class ForeignKeyRawIdWidgetTest(TestCase):
             'class="vForeignKeyRawIdAdminField">'
             '<a href="/admin_widgets/inventory/?_to_field=barcode" '
             'class="related-lookup" id="lookup_id_test" title="Lookup"></a>'
-            '&nbsp;<strong><a href="/admin_widgets/inventory/%(pk)s/change/">'
+            '&nbsp;<strong><a href="/admin_widgets/inventory/%(pk)s/change">'
             'Apple</a></strong>' % {'pk': apple.pk}
         )
 
@@ -614,7 +614,7 @@ class ForeignKeyRawIdWidgetTest(TestCase):
             '<input type="text" name="test" value="93" class="vForeignKeyRawIdAdminField">'
             '<a href="/admin_widgets/inventory/?_to_field=barcode" '
             'class="related-lookup" id="lookup_id_test" title="Lookup"></a>'
-            '&nbsp;<strong><a href="/admin_widgets/inventory/%(pk)s/change/">'
+            '&nbsp;<strong><a href="/admin_widgets/inventory/%(pk)s/change">'
             'Hidden</a></strong>' % {'pk': hidden.pk}
         )
 

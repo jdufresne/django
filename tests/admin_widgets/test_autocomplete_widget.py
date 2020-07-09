@@ -54,7 +54,7 @@ class AutocompleteMixinTests(TestCase):
             'data-ajax--cache': 'true',
             'data-ajax--delay': 250,
             'data-ajax--type': 'GET',
-            'data-ajax--url': '/admin_widgets/band/autocomplete/',
+            'data-ajax--url': '/admin_widgets/band/autocomplete',
             'data-theme': 'admin-autocomplete',
             'data-allow-clear': 'false',
             'data-placeholder': ''
@@ -79,7 +79,7 @@ class AutocompleteMixinTests(TestCase):
         rel = Album._meta.get_field('band').remote_field
         w = AutocompleteSelect(rel, admin.site)
         url = w.get_url()
-        self.assertEqual(url, '/admin_widgets/band/autocomplete/')
+        self.assertEqual(url, '/admin_widgets/band/autocomplete')
 
     def test_render_options(self):
         beatles = Band.objects.create(name='The Beatles', style='rock')

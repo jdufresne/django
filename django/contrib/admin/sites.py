@@ -1,3 +1,5 @@
+import warnings
+from django.views.generic import RedirectView
 import re
 from functools import update_wrapper
 from weakref import WeakSet
@@ -212,7 +214,7 @@ class AdminSite:
 
                     urls = super().get_urls()
                     urls += [
-                        path('my_view/', self.admin_view(some_view))
+                        path('my_view', self.admin_view(some_view))
                     ]
                     return urls
 
@@ -254,24 +256,50 @@ class AdminSite:
             wrapper.admin_site = self
             return update_wrapper(wrapper, view)
 
+        def redirect_view(name):
+            view = RedirectView.as_view(
+                pattern_name='%s:%s' % (self.name, name),
+            )
+
+            def inner(request):
+                warnings.warn(
+                    "URL is deprecated ...",
+                    RemovedInDjango41Warning
+                )
+                return view(request)
+            return inner
+
+        def wrap_redirect_view(name):
+            return wrap(redirect_view(name))
+
         # Admin-site-wide views.
         urlpatterns = [
             path('', wrap(self.index), name='index'),
-            path('login/', self.login, name='login'),
-            path('logout/', wrap(self.logout), name='logout'),
-            path('password_change/', wrap(self.password_change, cacheable=True), name='password_change'),
+            path('login', self.login, name='login'),
+            path('logout', wrap(self.logout), name='logout'),
+            path('password_change', wrap(self.password_change, cacheable=True), name='password_change'),
             path(
-                'password_change/done/',
+                'password_change/done',
                 wrap(self.password_change_done, cacheable=True),
                 name='password_change_done',
             ),
-            path('jsi18n/', wrap(self.i18n_javascript, cacheable=True), name='jsi18n'),
+            path('jsi18n', wrap(self.i18n_javascript, cacheable=True), name='jsi18n'),
             path(
-                'r/<int:content_type_id>/<path:object_id>/',
+                'r/<int:content_type_id>/<path:object_id>',
                 wrap(contenttype_views.shortcut),
                 name='view_on_site',
             ),
+
+            # For backwards compatibility.
+            path('login/', redirect_view('login')),
+            path('logout/', wrap_redirect_view('logout')),
+            path('password_change/', wrap_redirect_view('password_change')),
+            path('password_change/done/', wrap_redirect_view('password_change_done')),
+            path('jsi18n/', wrap_redirect_view('jsi18n')),
+            path('r/<int:content_type_id>/<path:object_id>/', wrap_redirect_view('view_on_site')),
         ]
+
+        #TODO THESE URLS
 
         # Add in each model's views, and create a list of valid URLS for the
         # app_index

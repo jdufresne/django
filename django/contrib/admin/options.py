@@ -1,3 +1,4 @@
+import warnings
 import copy
 import json
 import operator
@@ -617,19 +618,36 @@ class ModelAdmin(BaseModelAdmin):
             wrapper.model_admin = self
             return update_wrapper(wrapper, view)
 
+        def wrap_redirect(name):
+            redirect_view = RedirectView.as_view(
+                permanent=True,
+                pattern_name='%s:%s' % (self.admin_site.name, name),
+            )
+
+            def view(request):
+                warnings.warn(
+                    "URL is deprecated ...",
+                )
+                return redirect_view(request)
+            return wrap(view)
+
         info = self.model._meta.app_label, self.model._meta.model_name
 
         return [
             path('', wrap(self.changelist_view), name='%s_%s_changelist' % info),
-            path('add/', wrap(self.add_view), name='%s_%s_add' % info),
-            path('autocomplete/', wrap(self.autocomplete_view), name='%s_%s_autocomplete' % info),
-            path('<path:object_id>/history/', wrap(self.history_view), name='%s_%s_history' % info),
-            path('<path:object_id>/delete/', wrap(self.delete_view), name='%s_%s_delete' % info),
-            path('<path:object_id>/change/', wrap(self.change_view), name='%s_%s_change' % info),
-            # For backwards compatibility (was the change url before 1.9)
-            path('<path:object_id>/', wrap(RedirectView.as_view(
-                pattern_name='%s:%s_%s_change' % ((self.admin_site.name,) + info)
-            ))),
+            path('add', wrap(self.add_view), name='%s_%s_add' % info),
+            path('autocomplete', wrap(self.autocomplete_view), name='%s_%s_autocomplete' % info),
+            path('<path:object_id>/history', wrap(self.history_view), name='%s_%s_history' % info),
+            path('<path:object_id>/delete', wrap(self.delete_view), name='%s_%s_delete' % info),
+            path('<path:object_id>/change', wrap(self.change_view), name='%s_%s_change' % info),
+
+            # For backwards compatibility.
+            path('add/', wrap_redirect('%s_%s_add' % info)),
+            path('autocomplete/', wrap_redirect('%s_%s_autocomplete' % info)),
+            path('<path:object_id>/history/', wrap_redirect('%s_%s_history' % info)),
+            path('<path:object_id>/delete/', wrap_redirect('%s_%s_delete' % info)),
+            path('<path:object_id>/change/', wrap_redirect('%s_%s_change' % info)),
+            path('<path:object_id>/', wrap_redirect('%s_%s_change' % info)),
         ]
 
     @property

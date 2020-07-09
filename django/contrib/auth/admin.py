@@ -82,11 +82,12 @@ class UserAdmin(admin.ModelAdmin):
     def get_urls(self):
         return [
             path(
-                '<id>/password/',
+                '<id>/password',
                 self.admin_site.admin_view(self.user_change_password),
                 name='auth_user_password_change',
             ),
-        ] + super().get_urls()
+            *super().get_urls(),
+        ]
 
     def lookup_allowed(self, lookup, value):
         # Don't allow lookups involving passwords.

@@ -64,15 +64,15 @@ class SiteEachContextTest(TestCase):
         user = auth['models'][0]
         self.assertEqual(user['object_name'], 'User')
 
-        self.assertEqual(auth['app_url'], '/test_admin/admin/auth/')
+        self.assertEqual(auth['app_url'], '/test_admin/admin/auth')
         self.assertIs(auth['has_module_perms'], True)
 
         self.assertIn('perms', user)
         self.assertIs(user['perms']['add'], True)
         self.assertIs(user['perms']['change'], True)
         self.assertIs(user['perms']['delete'], True)
-        self.assertEqual(user['admin_url'], '/test_admin/admin/auth/user/')
-        self.assertEqual(user['add_url'], '/test_admin/admin/auth/user/add/')
+        self.assertEqual(user['admin_url'], '/test_admin/admin/auth/user')
+        self.assertEqual(user['add_url'], '/test_admin/admin/auth/user/add')
         self.assertEqual(user['name'], 'Users')
 
 
