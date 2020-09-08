@@ -1,15 +1,20 @@
 import re
+import warnings
 from functools import update_wrapper
 from weakref import WeakSet
 
 from django.apps import apps
+from django.conf import settings
 from django.contrib.admin import ModelAdmin, actions
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.base import ModelBase
-from django.http import Http404, HttpResponseRedirect
+from django.http import (
+    Http404, HttpResponsePermanentRedirect, HttpResponseRedirect,
+)
 from django.template.response import TemplateResponse
-from django.urls import NoReverseMatch, reverse
+from django.urls import NoReverseMatch, Resolver404, resolve, reverse
+from django.utils.deprecation import RemovedInDjango41Warning
 from django.utils.functional import LazyObject
 from django.utils.module_loading import import_string
 from django.utils.text import capfirst
@@ -416,7 +421,33 @@ class AdminSite:
         return LoginView.as_view(**defaults)(request)
 
     def final_catch_all_view(self, request):
+        # TODO: Remove the if block and the _admin_final_catch_all_view
+        # attribute after the deprecation period ends.
+        if (
+            request.user.is_authenticated and
+            settings.APPEND_SLASH and
+            not request.path_info.endswith('/')
+        ):
+            urlconf = getattr(request, 'urlconf', None)
+            path = '%s/' % request.path_info
+            try:
+                match = resolve(path, urlconf)
+            except Resolver404:
+                pass
+            else:
+                if not getattr(match.func, '_admin_final_catch_all_view', False):
+                    warnings.warn(
+                        "The path %s was requested with setting APPEND_SLASH "
+                        "set to True, so the response will be a redirect to %s. "
+                        "Support for APPEND_SLASH with the admin is deprecated "
+                        "and will be removed in Django 4.1 to prevent a private "
+                        "data leak issue. An Http404 will be raised instead." % (request.path_info, path),
+                        RemovedInDjango41Warning,
+                    )
+                    return HttpResponsePermanentRedirect(path)
         raise Http404
+
+    final_catch_all_view._admin_final_catch_all_view = True
 
     def _build_app_dict(self, request, label=None):
         """

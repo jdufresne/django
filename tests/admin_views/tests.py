@@ -30,6 +30,7 @@ from django.test.utils import override_script_prefix
 from django.urls import NoReverseMatch, resolve, reverse
 from django.utils import formats, translation
 from django.utils.cache import get_max_age
+from django.utils.deprecation import RemovedInDjango41Warning
 from django.utils.encoding import iri_to_uri
 from django.utils.html import escape
 from django.utils.http import urlencode
@@ -188,20 +189,19 @@ class AdminViewBasicTestCase(TestCase):
 class AdminViewBasicTest(AdminViewBasicTestCase):
     def test_trailing_slash_required(self):
         """
-        If you leave off the trailing slash, app will not redirect as that could be
-        used to enumerate models that the user does not have permission to know
-        about.
-        """
-        add_url = reverse('admin:admin_views_article_add')
-        response = self.client.get(add_url[:-1])
-        self.assertEqual(response.status_code, 404)
-
-    def test_trailing_slash_required_without_final_catch_all_pattern(self):
-        """
         If you leave off the trailing slash, app should redirect and add it.
         """
-        add_url = reverse('admin10:admin_views_article_add')
-        response = self.client.get(add_url[:-1])
+        add_url = reverse('admin:admin_views_article_add')
+        msg = (
+            "The path /test_admin/admin/admin_views/article/add was requested "
+            "with setting APPEND_SLASH set to True, so the response will be a "
+            "redirect to /test_admin/admin/admin_views/article/add/. Support "
+            "for APPEND_SLASH with the admin is deprecated and will be removed "
+            "in Django 4.1 to prevent a private data leak issue. An Http404 "
+            "will be raised instead."
+        )
+        with self.assertWarnsMessage(RemovedInDjango41Warning, msg):
+            response = self.client.get(add_url[:-1])
         self.assertRedirects(response, add_url, status_code=301)
 
     def test_basic_add_GET(self):
@@ -6409,6 +6409,54 @@ class AdminSiteFinalCatchAllPatternTests(TestCase):
         response = self.client.get(url)
         self.assertRedirects(response, '%s?next=%s' % (reverse('admin:login'), url))
 
+    @override_settings(APPEND_SLASH=True)
+    def test_missing_slash_append_slash_true_unknown_url(self):
+        superuser = User.objects.create_user(
+            username='staff',
+            password='secret',
+            email='staff@example.com',
+            is_staff=True,
+        )
+        self.client.force_login(superuser)
+        unknown_url = '/test_admin/admin/unknown/'
+        response = self.client.get(unknown_url[:-1])
+        self.assertEqual(response.status_code, 404)
+
+    @override_settings(APPEND_SLASH=True)
+    def test_missing_slash_append_slash_true(self):
+        superuser = User.objects.create_user(
+            username='staff',
+            password='secret',
+            email='staff@example.com',
+            is_staff=True,
+        )
+        self.client.force_login(superuser)
+        known_url = reverse('admin:admin_views_article_changelist')
+        msg = (
+            'The path /test_admin/admin/admin_views/article was requested with '
+            'setting APPEND_SLASH set to True, so the response will be a '
+            'redirect to /test_admin/admin/admin_views/article/. Support for '
+            'APPEND_SLASH with the admin is deprecated and will be removed in '
+            'Django 4.1 to prevent a private data leak issue. An Http404 will '
+            'be raised instead.'
+        )
+        with self.assertWarnsMessage(RemovedInDjango41Warning, msg):
+            response = self.client.get(known_url[:-1])
+        self.assertRedirects(response, known_url, status_code=301, target_status_code=403)
+
+    @override_settings(APPEND_SLASH=False)
+    def test_missing_slash_append_slash_false(self):
+        superuser = User.objects.create_user(
+            username='staff',
+            password='secret',
+            email='staff@example.com',
+            is_staff=True,
+        )
+        self.client.force_login(superuser)
+        known_url = reverse('admin:admin_views_article_changelist')
+        response = self.client.get(known_url[:-1])
+        self.assertEqual(response.status_code, 404)
+
     # Same tests above with final_catch_all_pattern=False.
 
     def test_unknown_url_404_if_not_authenticated_without_final_catch_all_pattern(self):
@@ -6452,6 +6500,45 @@ class AdminSiteFinalCatchAllPatternTests(TestCase):
         response = self.client.get(url)
         # Matches test_admin/admin10/admin_views/article/<path:object_id>/
         self.assertRedirects(response, url + '/', status_code=301, fetch_redirect_response=False)
+
+    @override_settings(APPEND_SLASH=True)
+    def test_missing_slash_append_slash_true_unknown_url_without_final_catch_all_pattern(self):
+        superuser = User.objects.create_user(
+            username='staff',
+            password='secret',
+            email='staff@example.com',
+            is_staff=True,
+        )
+        self.client.force_login(superuser)
+        unknown_url = '/test_admin/admin10/unknown/'
+        response = self.client.get(unknown_url[:-1])
+        self.assertEqual(response.status_code, 404)
+
+    @override_settings(APPEND_SLASH=True)
+    def test_missing_slash_append_slash_true_without_final_catch_all_pattern(self):
+        superuser = User.objects.create_user(
+            username='staff',
+            password='secret',
+            email='staff@example.com',
+            is_staff=True,
+        )
+        self.client.force_login(superuser)
+        known_url = reverse('admin10:admin_views_article_changelist')
+        response = self.client.get(known_url[:-1])
+        self.assertRedirects(response, known_url, status_code=301, target_status_code=403)
+
+    @override_settings(APPEND_SLASH=False)
+    def test_missing_slash_append_slash_false_without_final_catch_all_pattern(self):
+        superuser = User.objects.create_user(
+            username='staff',
+            password='secret',
+            email='staff@example.com',
+            is_staff=True,
+        )
+        self.client.force_login(superuser)
+        known_url = reverse('admin10:admin_views_article_changelist')
+        response = self.client.get(known_url[:-1])
+        self.assertEqual(response.status_code, 404)
 
     # Outside admin.
 

@@ -522,3 +522,7 @@ Miscellaneous
 * The ``default_app_config`` application configuration variable is deprecated,
   due to the now automatic ``AppConfig`` discovery. See :ref:`whats-new-3.2`
   for more details.
+
+* Support for :setting:`APPEND_SLASH` with the admin is deprecated. In Django
+  4.1, requesting an admin URL without a trailing slash will raise a
+  :class:`~django.http.Http404` instead.
